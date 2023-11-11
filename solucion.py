@@ -1,50 +1,53 @@
 import numpy as np
 
-def resolver_ayuda(tablero):
-    
-    nfilas_tablero = len(tablero)
-    nfilas = nfilas_tablero * nfilas_tablero
-    matriz_Lights_Out = matriz_toggle_tablero(tablero)
-    entradas = entradas_tablero(tablero)
-    entradas = entradas.transpose()
-    entradas.resize(nfilas, 1)
-    aumentado = np.hstack((matriz_Lights_Out, entradas))
+def lights_out_resolver(board):
+    num_rows_board = len(board)
+    num_rows = num_rows_board * num_rows_board
+    lights_out_matrix = matriz_toggle(num_rows_board)
+    entries = get_entries(board)
+    entries = entries.transpose()
+    entries.resize(num_rows, 1)
+    augmented_matrix = np.hstack((lights_out_matrix, entries))
+    remove_zeros(augmented_matrix, num_rows)
+    sustitution(augmented_matrix, num_rows)
+    solution = augmented_matrix[:, -1]
+    solution = solution.reshape((num_rows_board, num_rows_board))
+    return solution
 
-    for fila in range(nfilas - 1):
-        if aumentado[fila, fila] == 0:
-            fila_no_cero = np.argmax(aumentado[fila + 1 :, fila])
-            aumentado[[fila, fila_no_cero + fila + 1]] = aumentado[[fila_no_cero + fila + 1, fila]]
+def matriz_toggle(num_rows_board):
+    num_rows = num_rows_board * num_rows_board
+    toggle_matrix = np.zeros((num_rows, num_rows), dtype=int)
+    for i in range(num_rows):
+        for j in range(num_rows):
+            set_matriz_toggle_element(toggle_matrix, i, j, num_rows_board)
+    return toggle_matrix
 
-        for i in range(fila + 1, nfilas):
-            if aumentado[i, fila] == 1:
-                aumentado[i] = (aumentado[i] + aumentado[fila]) % 2
+def set_matriz_toggle_element(toggle_matrix, i, j, num_rows_board):
+    if i == j:
+        toggle_matrix[i, j] = 1
+    elif (i // num_rows_board == j // num_rows_board and abs(i - j) == 1) or (i % num_rows_board == j % num_rows_board and abs(i - j) == num_rows_board):
+        toggle_matrix[i, j] = 1
 
-    for columna in range(nfilas - 1, 0, -1):
-        for i in range(columna - 1, -1, -1):
-            if aumentado[i, columna] == 1:
-                aumentado[i] = (aumentado[i] + aumentado[columna]) % 2
+def get_entries(board):
+    return np.array(board).flatten()
 
-    respuesta = aumentado[:, -1]
-    respuesta = respuesta.reshape((nfilas_tablero, nfilas_tablero))
-    return respuesta
+def remove_zeros(augmented_matrix, num_rows):
+    for row in range(num_rows - 1):
+        if augmented_matrix[row, row] == 0:
+            swap_row(augmented_matrix, row)
+        for i in range(row + 1, num_rows):
+            if augmented_matrix[i, row] == 1:
+                augmented_matrix[i] = (augmented_matrix[i] + augmented_matrix[row]) % 2
 
-def matriz_toggle_tablero(tablero):
-    nfilas_tablero = len(tablero)
-    nrows = nfilas_tablero * nfilas_tablero
-    matriz_toggle = np.zeros((nrows, nrows), dtype=int)
-    for i in range(nrows):
-        for j in range(nrows):
-            if i == j:
-                matriz_toggle[i, j] = 1
-            elif (i // nfilas_tablero == j // nfilas_tablero and abs(i - j) == 1) or (
-                i % nfilas_tablero == j % nfilas_tablero and abs(i - j) == nfilas_tablero
-            ):
-                matriz_toggle[i, j] = 1
-    return matriz_toggle
+def swap_row(augmented_matrix, row):
+    non_zero_row = np.argmax(augmented_matrix[row + 1 :, row])
+    augmented_matrix[[row, non_zero_row + row + 1]] = augmented_matrix[[non_zero_row + row + 1, row]]
 
-def entradas_tablero(tablero):
-    return np.array(tablero).flatten()
+def sustitution(augmented_matrix, num_rows):
+    for col in range(num_rows - 1, 0, -1):
+        for i in range(col - 1, -1, -1):
+            if augmented_matrix[i, col] == 1:
+                augmented_matrix[i] = (augmented_matrix[i] + augmented_matrix[col]) % 2
 
 # Ejemplo de uso
-print(resolver_ayuda(np.array([[0, 0, 1, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 1, 1, 1]])))
-
+print(lights_out_resolver(np.array([[0, 0, 1, 0], [1, 0, 0, 1], [1, 0, 1, 0], [1, 1, 1, 1]])))
